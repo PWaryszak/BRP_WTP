@@ -1,25 +1,59 @@
 library(tidyverse)
 library(readxl)
 library(lubridate)#install.packages ("lubridate") for editing time series
+library(lme4)
+library(lmerTest)
+library(sjPlot)
+library(sjstats)
+library(sjmisc)
+library(grid)
 library(gridExtra)
+library(nlme)
+library(ggpmisc)
+
 
 #DATA:
-#Turn wide format to long format for plotting:
-#summer 2020 temperature data :========
-gas <- read_excel("Ebullition_GasRetreival_Hobos.xlsx", sheet = "ALL_DATA")
-str(gas)
-gas$TotalGas_mL <- as.numeric(as.character(gas$TotalGas_mL))
-gas$N2O_ppm  <- as.numeric(as.character(gas$N2O_ppm ))
-gas$CH4_ppm  <- as.numeric(as.character(gas$CH4_ppm ))
-gas$CO2_ppm  <- as.numeric(as.character(gas$CO2_ppm ))
-
-gas$BoardPosition<- factor(gas$BoardPosition, levels = c( "South","Middle","North"))
-
-#Gas Total Plot=======
-options(scipen=1000000) #to stop axis labels being abbreviated: web = https://stackoverflow.com/questions/14563989/force-r-to-stop-plotting-abbreviated-axis-labels-e-g-1e00-in-ggplot2
+#summer 2020 Ebullition data :========
+ebullition <- read_excel("Ebullition_GasRetreival_Hobos.xlsx", sheet = "ALL_DATA")
+str(ebullition)
+ebullition$Totalebullition_mL <- as.numeric(as.character(ebullition$Totalebullition_mL))
+ebullition$N2O_ppm  <- as.numeric(as.character(ebullition$N2O_ppm ))
+ebullition$CH4_ppm  <- as.numeric(as.character(ebullition$CH4_ppm ))
+ebullition$CO2_ppm  <- as.numeric(as.character(ebullition$CO2_ppm ))
+ebullition$BoardPosition<- factor(ebullition$BoardPosition, levels = c( "South","Middle","North"))
 
 
-plot_gas <- ggplot(data = gas, aes(x= BoardPosition, y=TotalGas_mL/DaysDeployed,color = BoardPosition)) +
+#ebullition CH4 Stats Table  :==========
+names(ebullition)
+ebullition$CH4_ppm  <- as.numeric(as.character(ebullition$CH4_ppm ))
+model_ebullition<-( lmer(CH4_ppm ~ CollectionSeason + (1|BoardPosition), data=ebullition))
+tab_model(model_ebullition,show.se = TRUE)
+tab_model(model_ebullition,show.icc = FALSE,show.stat =T,show.re.var=F) #Simpler table
+
+#ebullition CO2 Stats Table  :==========
+names(ebullition)
+ebullition$CO2_ppm  <- as.numeric(as.character(ebullition$CO2_ppm ))
+model_ebullition<-( lmer(CO2_ppm ~ CollectionSeason + (1|BoardPosition), data=ebullition))
+tab_model(model_ebullition,show.se = TRUE)
+tab_model(model_ebullition,show.icc = FALSE,show.stat =T,show.re.var=F) #Simpler table
+
+
+#UGGA Stats Table  :==========
+ugga <- read_excel("Master_BRP_GHG_Flux_Data.xlsx", sheet = "WTP_GHG_Winter")
+names(ugga)#"Site_ID"            "Date"               "Season"             "CO2_Flux_mgm2day"   "CO2_Flux_mmolm2day" "R2_CO2"    "CH4_Flux_mgm2day" 
+# [8] "CH4_Flux_mmolm2day" "R2_CH4"             "Site"               "Rehab"              "Position"           "Subplot"            "Rehab_FreshPond"   
+
+ugga$CO2_Flux_mgm2day  <- as.numeric(as.character(ugga$CO2_Flux_mgm2day ))
+model_ugga<-( lmer(CO2_Flux_mgm2day ~ Rehab_FreshPond + (1|Subplot), data=ugga))
+tab_model(model_ugga,show.se = TRUE)
+tab_model(model_ugga,show.icc = FALSE,show.stat =T,show.re.var=F) #Simpler table
+
+
+#ebullition Total Plot=======
+#options(scipen=1000000) #to stop axis labels being abbreviated: web = https://stackoverflow.com/questions/14563989/force-r-to-stop-plotting-abbreviated-axis-labels-e-g-1e00-in-ggplot2
+
+
+plot_ebullition <- ggplot(data = ebullition, aes(x= BoardPosition, y=Totalgas_mL/DaysDeployed,color = BoardPosition)) +
   labs(y = "Gas volume (mL/day)", x="Board") +
   geom_boxplot()+ geom_jitter()+
   ggtitle("Gas total at WTP")+
